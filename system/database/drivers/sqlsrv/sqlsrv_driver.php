@@ -87,7 +87,7 @@ class CI_DB_sqlsrv_driver extends CI_DB {
 	 */
 	function db_pconnect()
 	{
-		$this->db_connect(TRUE);
+		return $this->db_connect(TRUE);
 	}
 
 	// --------------------------------------------------------------------
@@ -166,7 +166,15 @@ class CI_DB_sqlsrv_driver extends CI_DB {
 	 */
 	function _prep_query($sql)
 	{
-		return $sql;
+    $sql = preg_replace('/IF\(([^,]+),([^,]+),([^,]+)\)/s', "CASE WHEN $1 THEN $2 ELSE $3 END", $sql);
+    $sql = preg_replace('/date\(/', "CONVERT(DATE,", $sql);
+    $sql = preg_replace('/NOW\(\)/', "GETDATE()", $sql);
+    $sql = preg_replace('/IFNULL/', "ISNULL", $sql);
+    $sql = preg_replace('/DATEDIFF\(/', "DATEDIFF(day,", $sql);
+    $sql = preg_replace('/SQL_CALC_FOUND_ROWS/', "COUNT (*) OVER () AS num_rows,", $sql);
+    $sql = preg_replace('/HAVING is_overdue =  1/', "WHERE CASE WHEN ip_invoices.invoice_status_id NOT IN (1, 4) AND DATEDIFF(day, getdate(), invoice_date_due) > 0 THEN 1 ELSE 0 END = 1", $sql);
+    
+    return $sql;
 	}
 
 	// --------------------------------------------------------------------
